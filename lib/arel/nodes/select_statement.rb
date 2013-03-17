@@ -5,6 +5,7 @@ module Arel
       attr_accessor :limit, :orders, :lock, :offset, :with
 
       def initialize cores = [SelectCore.new]
+        cores = [ cores ] unless Array === cores
         @cores          = cores
         @orders         = []
         @limit          = nil
