@@ -116,14 +116,31 @@ key on UpdateManager using UpdateManager#key=
       end
 
       def visit_Arel_Nodes_SelectStatement o
-        [
-          (visit(o.with) if o.with),
-          o.cores.map { |x| visit_Arel_Nodes_SelectCore x }.join,
-          ("ORDER BY #{o.orders.map { |x| visit x }.join(', ')}" unless o.orders.empty?),
-          (visit(o.limit) if o.limit),
-          (visit(o.offset) if o.offset),
-          (visit(o.lock) if o.lock),
-        ].compact.join ' '
+        str = ''
+
+        if o.with
+          str << visit(o.with)
+          str << SPACE
+        end
+
+        o.cores.each { |x| str << visit(x) }
+
+        unless o.orders.empty?
+          str << SPACE
+          str << ORDER_BY
+          len = o.orders.length - 1
+          o.orders.each_with_index { |x, i|
+            str << visit(x)
+            str << COMMA unless len == i
+          }
+        end
+
+        str << " #{visit(o.limit)}" if o.limit
+        str << " #{visit(o.offset)}" if o.offset
+        str << " #{visit(o.lock)}" if o.lock
+
+        str.strip!
+        str
       end
 
       def visit_Arel_Nodes_SelectCore o
@@ -160,19 +177,27 @@ key on UpdateManager using UpdateManager#key=
       end
 
       def visit_Arel_Nodes_Union o
-        "( #{visit o.left} UNION #{visit o.right} )"
+        "( #{ o.children.map { |x| visit x }.join ' ) UNION ( ' } )"
       end
 
       def visit_Arel_Nodes_UnionAll o
-        "( #{visit o.left} UNION ALL #{visit o.right} )"
+        "( #{ o.children.map { |x| visit x }.join ' ) UNION ALL ( ' } )"
       end
 
       def visit_Arel_Nodes_Intersect o
-        "( #{visit o.left} INTERSECT #{visit o.right} )"
+        "( #{ o.children.map { |x| visit x }.join ' ) INTERSECT ( ' } )"
+      end
+
+      def visit_Arel_Nodes_IntersectAll o
+        "( #{ o.children.map { |x| visit x }.join ' ) INTERSECT ALL ( ' } )"
       end
 
       def visit_Arel_Nodes_Except o
-        "( #{visit o.left} EXCEPT #{visit o.right} )"
+        "( #{ o.children.map { |x| visit x }.join ' ) EXCEPT ( ' } )"
+      end
+
+      def visit_Arel_Nodes_ExceptAll o
+        "( #{ o.children.map { |x| visit x }.join ' ) EXCEPT ALL ( ' } )"
       end
 
       def visit_Arel_Nodes_Having o
@@ -187,17 +212,16 @@ key on UpdateManager using UpdateManager#key=
         "LIMIT #{visit o.expr}"
       end
 
-      # FIXME: this does nothing on most databases, but does on MSSQL
-      def visit_Arel_Nodes_Top o
-        ""
-      end
-
       def visit_Arel_Nodes_Lock o
         visit o.expr
       end
 
       def visit_Arel_Nodes_Grouping o
         "(#{visit o.expr})"
+      end
+
+      def visit_Arel_SelectManager o
+        "( #{o.to_sql.rstrip} )"
       end
 
       def visit_Arel_Nodes_Ascending o
@@ -324,7 +348,7 @@ key on UpdateManager using UpdateManager#key=
       end
 
       def visit_Arel_Nodes_Or o
-        "#{visit o.left} OR #{visit o.right}"
+        o.children.map { |x| visit x }.join ' OR '
       end
 
       def visit_Arel_Nodes_Assignment o

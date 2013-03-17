@@ -28,7 +28,7 @@ require 'arel/nodes/table_alias'
 require 'arel/nodes/infix_operation'
 
 # nary
-require 'arel/nodes/and'
+require 'arel/nodes/nary'
 
 # function
 # FIXME: Function + Alias can be rewritten as a Function and Alias node.
