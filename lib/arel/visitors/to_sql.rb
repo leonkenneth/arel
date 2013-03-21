@@ -4,6 +4,16 @@ require 'date'
 module Arel
   module Visitors
     class ToSql < Arel::Visitors::Visitor
+      WHERE    = ' WHERE '    # :nodoc:
+      SPACE    = ' '          # :nodoc:
+      COMMA    = ', '         # :nodoc:
+      GROUP_BY = ' GROUP BY ' # :nodoc:
+      ORDER_BY = ' ORDER BY ' # :nodoc:
+      WINDOW   = ' WINDOW '   # :nodoc:
+      AND      = ' AND '      # :nodoc:
+
+      DISTINCT = 'DISTINCT'   # :nodoc:
+
       attr_accessor :last_column
 
       def initialize connection
