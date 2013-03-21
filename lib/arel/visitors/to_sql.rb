@@ -172,7 +172,7 @@ key on UpdateManager using UpdateManager#key=
           str << SPACE
         end
 
-        o.cores.each { |x| str << visit_Arel_Nodes_SelectCore(x) }
+        o.cores.each { |x| str << visit(x) }
 
         unless o.orders.empty?
           str << SPACE
@@ -262,19 +262,27 @@ key on UpdateManager using UpdateManager#key=
       end
 
       def visit_Arel_Nodes_Union o
-        "( #{visit o.left} UNION #{visit o.right} )"
+        "( #{ o.children.map { |x| visit x }.join ' ) UNION ( ' } )"
       end
 
       def visit_Arel_Nodes_UnionAll o
-        "( #{visit o.left} UNION ALL #{visit o.right} )"
+        "( #{ o.children.map { |x| visit x }.join ' ) UNION ALL ( ' } )"
       end
 
       def visit_Arel_Nodes_Intersect o
-        "( #{visit o.left} INTERSECT #{visit o.right} )"
+        "( #{ o.children.map { |x| visit x }.join ' ) INTERSECT ( ' } )"
+      end
+
+      def visit_Arel_Nodes_IntersectAll o
+        "( #{ o.children.map { |x| visit x }.join ' ) INTERSECT ALL ( ' } )"
       end
 
       def visit_Arel_Nodes_Except o
-        "( #{visit o.left} EXCEPT #{visit o.right} )"
+        "( #{ o.children.map { |x| visit x }.join ' ) EXCEPT ( ' } )"
+      end
+
+      def visit_Arel_Nodes_ExceptAll o
+        "( #{ o.children.map { |x| visit x }.join ' ) EXCEPT ALL ( ' } )"
       end
 
       def visit_Arel_Nodes_NamedWindow o
@@ -342,11 +350,6 @@ key on UpdateManager using UpdateManager#key=
         "LIMIT #{visit o.expr}"
       end
 
-      # FIXME: this does nothing on most databases, but does on MSSQL
-      def visit_Arel_Nodes_Top o
-        ""
-      end
-
       def visit_Arel_Nodes_Lock o
         visit o.expr
       end
@@ -356,7 +359,7 @@ key on UpdateManager using UpdateManager#key=
       end
 
       def visit_Arel_SelectManager o
-        "(#{o.to_sql.rstrip})"
+        "( #{o.to_sql.rstrip} )"
       end
 
       def visit_Arel_Nodes_Ascending o
@@ -500,7 +503,7 @@ key on UpdateManager using UpdateManager#key=
       end
 
       def visit_Arel_Nodes_Or o
-        "#{visit o.left} OR #{visit o.right}"
+        o.children.map { |x| visit x }.join ' OR '
       end
 
       def visit_Arel_Nodes_Assignment o
